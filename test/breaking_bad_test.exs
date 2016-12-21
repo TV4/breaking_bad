@@ -3,7 +3,7 @@ defmodule BreakingBadTest do
   import BreakingBad.CircuitBreaker
 
   setup do
-    install(:test, %BreakingBad.CircuitBreaker{name: :test, threshold: 2, threshold_ms: 100, reset_ms: 100})
+    reinit(:test)
     subscribe(:test)
     on_exit(fn -> unsubscribe(:test) end)
     :ok
@@ -45,60 +45,48 @@ defmodule BreakingBadTest do
     end
   end
 
-  test "returns service outage error when circuit is blown" do
-    melt(:test)
-    melt(:test)
-    assert_receive(:blown)
-    assert with_circuit_breaker(:test, fn ->
-      flunk("The forwarded function should not have been reached if the circuit is blown")
-    end) == {:error, %{type: :service_outage, source_error: "System \"test\" outage detected"}}
-  end
-
   test "process killed causes circuit to blow" do
     melt(:test)
 
-    parent = self
     pid = spawn(fn ->
-      with_circuit_breaker(:test, fn ->
-        send(parent, :timeout)
-        :timer.sleep(:infinity) # paused while waiting to be killed
-      end)
+      monitor(self, :test)
+      :timer.sleep(:infinity) # paused while waiting to be killed
     end)
 
-    assert_receive(:timeout)
+    assert_receive(:monitor)
     Process.exit(pid, :kill)
 
     assert_receive(:blown)
   end
 
   test "deregister process monitoring after normal process exit" do
-    spawn(fn ->
-      with_circuit_breaker(:test, fn ->
-        nil
-      end)
+    pid = spawn(fn ->
+      monitor(self, :test)
+      receive do
+        :exit -> nil
+      end
     end)
     assert_receive(:monitor)
+    send(pid, :exit)
     assert_receive(:demonitor)
     assert state(:test).monitored_refs == []
   end
 
   test "deregister process monitoring when the process has exited before monitoring started" do
-    spawn(fn ->
-      with_circuit_breaker(:test, fn -> nil end)
-    end)
+    pid = spawn(fn -> nil end)
+    monitor(pid, :test)
     assert_receive(:monitor)
+    assert_receive(:demonitor)
     assert state(:test).monitored_refs == []
   end
 
   test "demonitor references when circuit is blown" do
-    parent = self
     pid = spawn(fn ->
-      with_circuit_breaker(:test, fn ->
-        send(parent, :timeout)
-        :timer.sleep(:infinity) # paused while waiting to be killed
-      end)
+      monitor(self, :test)
+      :timer.sleep(:infinity) # paused while waiting to be killed
     end)
-    assert_receive(:timeout)
+    assert_receive(:monitor)
+    assert length(state(:test).monitored_refs) == 1
 
     melt(:test)
     melt(:test)

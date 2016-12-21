@@ -4,8 +4,8 @@ defmodule BreakingBad.CircuitBreaker do
 
   defstruct name: nil, state: :ok, failure_timestamps: [], threshold: nil, threshold_ms: nil, reset_ms: nil, monitored_refs: [], listeners: []
 
-  def install(circuit_name, circuit_breaker = %__MODULE__{}) do
-    GenServer.cast(circuit_name, {:install, circuit_breaker})
+  def reinit(circuit_name) do
+    GenServer.call(circuit_name, :reinit)
   end
 
   def subscribe(circuit_name) do
@@ -41,25 +41,6 @@ defmodule BreakingBad.CircuitBreaker do
     GenServer.cast(circuit_name, {:monitor, pid})
   end
 
-  def with_circuit_breaker(circuit_name, function) do
-    if Application.get_env(:breaking_bad, :circuit_breaker_enabled) do
-      ask(circuit_name)
-      |> with_circuit_breaker(circuit_name, function)
-    else
-      function.()
-    end
-  end
-
-  defp with_circuit_breaker(:ok, circuit_name, function) do
-    monitor(self, circuit_name)
-    notify(circuit_name, :monitor)
-    function.()
-  end
-  defp with_circuit_breaker(:blown, circuit_name, _) do
-    Logger.info("#{circuit_name}_outage_response")
-    {:error, %{type: :service_outage, source_error: "System \"#{circuit_name}\" outage detected"}}
-  end
-
   def start_link(config) do
     GenServer.start_link(__MODULE__, config, name: config.name)
   end
@@ -88,10 +69,10 @@ defmodule BreakingBad.CircuitBreaker do
   def handle_call(:unsubscribe, {caller, _ref}, circuit_breaker) do
     {:reply, :ok, Map.put(circuit_breaker, :listeners, List.delete(circuit_breaker.listeners, caller))}
   end
-
-  def handle_cast({:install, circuit}, circuit_breaker) do
-    {:noreply, Map.merge(circuit_breaker, circuit)}
+  def handle_call(:reinit, _pid, circuit_breaker) do
+    {:reply, :ok, Map.merge(circuit_breaker, %{state: :ok, failure_timestamps: []})}
   end
+
   # Do not add failure timestamp when already blown?
   def handle_cast(:melt, circuit_breaker = %__MODULE__{state: :blown}) do
     notify(circuit_breaker.name, :melt)
@@ -115,6 +96,7 @@ defmodule BreakingBad.CircuitBreaker do
   end
   def handle_cast({:monitor, pid}, circuit_breaker) do
     ref = Process.monitor(pid)
+    notify(circuit_breaker.name, :monitor)
     {:noreply, Map.put(circuit_breaker, :monitored_refs, [ref | circuit_breaker.monitored_refs])}
   end
   def handle_cast({:notify, event}, circuit_breaker) do
@@ -143,6 +125,9 @@ defmodule BreakingBad.CircuitBreaker do
     Logger.debug("#{circuit_breaker.name}_circuit_breaker_failure_count", length(circuit_breaker.failure_timestamps))
     Logger.debug("#{circuit_breaker.name}_circuit_breaker_monitor_count", length(circuit_breaker.monitored_refs))
     {:noreply, circuit_breaker}
+  end
+  def handle_info(massage) do
+    IO.inspect(massage)
   end
 
   defp truncate_failure_timestamps(circuit_breaker) do

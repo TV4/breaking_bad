@@ -24,5 +24,4 @@ If [available in Hex](https://hex.pm/docs/publish), the package can be installed
 
 ## Configuration
 
-+ `CIRCUIT_BREAKER_ENABLED`                Toggle for the circuit breaker. Example: `true`
 + `CIRCUIT_BREAKER_LOG_INTERVAL`           Interval between circuit breaker debug logging. Example: `10000`
