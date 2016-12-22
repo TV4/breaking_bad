@@ -102,7 +102,7 @@ defmodule BreakingBad.CircuitBreaker do
   def handle_cast({:notify, event}, circuit_breaker) do
     circuit_breaker.listeners
     |> Enum.each(fn(pid) ->
-      send(pid, event)
+      send(pid, {event, circuit_breaker.name})
     end)
 
     {:noreply, circuit_breaker}

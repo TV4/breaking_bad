@@ -8,7 +8,7 @@ defmodule BreakingBad do
 
     # Define workers and child supervisors to be supervised
     children = [
-      supervisor(BreakingBad.CircuitBreaker.Supervisor, [Application.get_env(:breaking_bad, :circuit_breaker, [])]),
+      supervisor(BreakingBad.CircuitBreaker.Supervisor, [Application.get_env(:breaking_bad, :circuits, [])]),
     ]
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html

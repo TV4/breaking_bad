@@ -40,8 +40,8 @@ defmodule BreakingBadTest do
     test "the circuit resets after the reset time" do
       melt(:test)
       melt(:test)
-      assert_receive(:blown)
-      assert_receive(:reset, 200)
+      assert_receive({:blown, :test})
+      assert_receive({:reset, :test}, 200)
     end
   end
 
@@ -53,10 +53,10 @@ defmodule BreakingBadTest do
       :timer.sleep(:infinity) # paused while waiting to be killed
     end)
 
-    assert_receive(:monitor)
+    assert_receive({:monitor, :test})
     Process.exit(pid, :kill)
 
-    assert_receive(:blown)
+    assert_receive({:blown, :test})
   end
 
   test "deregister process monitoring after normal process exit" do
@@ -66,17 +66,17 @@ defmodule BreakingBadTest do
         :exit -> nil
       end
     end)
-    assert_receive(:monitor)
+    assert_receive({:monitor, :test})
     send(pid, :exit)
-    assert_receive(:demonitor)
+    assert_receive({:demonitor, :test})
     assert state(:test).monitored_refs == []
   end
 
   test "deregister process monitoring when the process has exited before monitoring started" do
     pid = spawn(fn -> nil end)
     monitor(pid, :test)
-    assert_receive(:monitor)
-    assert_receive(:demonitor)
+    assert_receive({:monitor, :test})
+    assert_receive({:demonitor, :test})
     assert state(:test).monitored_refs == []
   end
 
@@ -85,19 +85,19 @@ defmodule BreakingBadTest do
       monitor(self, :test)
       :timer.sleep(:infinity) # paused while waiting to be killed
     end)
-    assert_receive(:monitor)
+    assert_receive({:monitor, :test})
     assert length(state(:test).monitored_refs) == 1
 
     melt(:test)
     melt(:test)
 
-    assert_receive(:melt)
-    assert_receive(:melt)
-    assert_receive(:blown)
+    assert_receive({:melt, :test})
+    assert_receive({:melt, :test})
+    assert_receive({:blown, :test})
 
     assert state(:test).monitored_refs == []
 
     Process.exit(pid, :kill)
-    refute_receive(:melt)
+    refute_receive({:melt, :test})
   end
 end
