@@ -17,7 +17,6 @@ defmodule BreakingBad.CircuitBreaker do
   end
 
   defp notify(circuit_name, event) do
-    Logger.debug("#{circuit_name}_circuit_breaker_#{event}")
     GenServer.cast(circuit_name, {:notify, event})
   end
 
@@ -49,7 +48,7 @@ defmodule BreakingBad.CircuitBreaker do
 
   def init(config) do
     if Mix.env == :prod do
-      :timer.send_interval(Application.get_env(:breaking_bad, :circuit_breaker_log_interval), config.name, :log_state)
+      :timer.send_interval(Application.get_env(:breaking_bad, :circuit_breaker_interval, 1000), config.name, :interval)
     end
     {:ok, struct(__MODULE__, config)}
   end
@@ -100,6 +99,7 @@ defmodule BreakingBad.CircuitBreaker do
     {:noreply, Map.put(circuit_breaker, :monitored_refs, [ref | circuit_breaker.monitored_refs])}
   end
   def handle_cast({:notify, event}, circuit_breaker) do
+    Logger.debug(inspect({event, circuit_breaker.name}))
     circuit_breaker.listeners
     |> Enum.each(fn(pid) ->
       send(pid, {event, circuit_breaker.name})
@@ -119,15 +119,10 @@ defmodule BreakingBad.CircuitBreaker do
     notify(circuit_breaker.name, :reset)
     {:noreply, Map.put(circuit_breaker, :state, :ok)}
   end
-  def handle_info(:log_state, circuit_breaker) do
+  def handle_info(:interval, circuit_breaker) do
     circuit_breaker = truncate_failure_timestamps(circuit_breaker)
-    Logger.debug("#{circuit_breaker.name}_circuit_breaker_failure_diff", diff(circuit_breaker))
-    Logger.debug("#{circuit_breaker.name}_circuit_breaker_failure_count", length(circuit_breaker.failure_timestamps))
-    Logger.debug("#{circuit_breaker.name}_circuit_breaker_monitor_count", length(circuit_breaker.monitored_refs))
+    notify(circuit_breaker.name, {:interval, circuit_breaker})
     {:noreply, circuit_breaker}
-  end
-  def handle_info(massage) do
-    IO.inspect(massage)
   end
 
   defp truncate_failure_timestamps(circuit_breaker) do
@@ -151,10 +146,10 @@ defmodule BreakingBad.CircuitBreaker do
     end
   end
 
-  defp diff(%__MODULE__{failure_timestamps: []}) do
+  def diff(%__MODULE__{failure_timestamps: []}) do
     0
   end
-  defp diff(%__MODULE__{failure_timestamps: failure_timestamps}) do
+  def diff(%__MODULE__{failure_timestamps: failure_timestamps}) do
     List.first(failure_timestamps) - List.last(failure_timestamps)
   end
 end
