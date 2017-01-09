@@ -49,7 +49,7 @@ defmodule BreakingBadTest do
     melt(:test)
 
     pid = spawn(fn ->
-      monitor(self, :test)
+      monitor(self(), :test)
       :timer.sleep(:infinity) # paused while waiting to be killed
     end)
 
@@ -61,7 +61,7 @@ defmodule BreakingBadTest do
 
   test "deregister process monitoring after normal process exit" do
     pid = spawn(fn ->
-      monitor(self, :test)
+      monitor(self(), :test)
       receive do
         :exit -> nil
       end
@@ -82,7 +82,7 @@ defmodule BreakingBadTest do
 
   test "demonitor references when circuit is blown" do
     pid = spawn(fn ->
-      monitor(self, :test)
+      monitor(self(), :test)
       :timer.sleep(:infinity) # paused while waiting to be killed
     end)
     assert_receive({:monitor, :test})
