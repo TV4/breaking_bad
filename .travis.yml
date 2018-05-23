@@ -1,11 +1,7 @@
 sudo: false
 language: elixir
-elixir: 1.4.4
-otp_release: 19.3
+elixir: 1.6.5
+otp_release: 20.3
 script:
 - mix local.rebar --force
 - mix test --trace
-notifications:
-  slack:
-    rooms:
-    - tv4:8wve6msXEEonJ23Ri1HhfnKc#www-commits-and-build

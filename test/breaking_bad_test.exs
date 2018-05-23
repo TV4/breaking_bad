@@ -11,14 +11,14 @@ defmodule BreakingBadTest do
 
   test "state" do
     assert state(:test) == %{
-      name: :test,
-      threshold: 2,
-      threshold_ms: 100,
-      reset_ms: 100,
-      failure_timestamps: [],
-      state: :ok,
-      monitored_refs: []
-    }
+             name: :test,
+             threshold: 2,
+             threshold_ms: 100,
+             reset_ms: 100,
+             failure_timestamps: [],
+             state: :ok,
+             monitored_refs: []
+           }
   end
 
   describe "ask" do
@@ -48,10 +48,12 @@ defmodule BreakingBadTest do
   test "process killed causes circuit to blow" do
     melt(:test)
 
-    pid = spawn(fn ->
-      monitor(self(), :test)
-      :timer.sleep(:infinity) # paused while waiting to be killed
-    end)
+    pid =
+      spawn(fn ->
+        monitor(self(), :test)
+        # paused while waiting to be killed
+        :timer.sleep(:infinity)
+      end)
 
     assert_receive({:monitor, :test})
     Process.exit(pid, :kill)
@@ -60,12 +62,15 @@ defmodule BreakingBadTest do
   end
 
   test "deregister process monitoring after normal process exit" do
-    pid = spawn(fn ->
-      monitor(self(), :test)
-      receive do
-        :exit -> nil
-      end
-    end)
+    pid =
+      spawn(fn ->
+        monitor(self(), :test)
+
+        receive do
+          :exit -> nil
+        end
+      end)
+
     assert_receive({:monitor, :test})
     send(pid, :exit)
     assert_receive({:demonitor, :test})
@@ -81,10 +86,13 @@ defmodule BreakingBadTest do
   end
 
   test "demonitor references when circuit is blown" do
-    pid = spawn(fn ->
-      monitor(self(), :test)
-      :timer.sleep(:infinity) # paused while waiting to be killed
-    end)
+    pid =
+      spawn(fn ->
+        monitor(self(), :test)
+        # paused while waiting to be killed
+        :timer.sleep(:infinity)
+      end)
+
     assert_receive({:monitor, :test})
     assert length(state(:test).monitored_refs) == 1
 

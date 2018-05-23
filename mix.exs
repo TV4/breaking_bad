@@ -7,10 +7,9 @@ defmodule BreakingBad.Mixfile do
       version: "0.1.0",
       elixir: "~> 1.3",
       package: package(),
-      build_embedded: Mix.env == :prod,
-      start_permanent: Mix.env == :prod,
-      deps: deps(),
-      preferred_cli_env: ["test.watch": :test],
+      build_embedded: Mix.env() == :prod,
+      start_permanent: Mix.env() == :prod,
+      deps: deps()
     ]
   end
 
@@ -32,7 +31,7 @@ defmodule BreakingBad.Mixfile do
 
   defp deps do
     [
-      {:mix_test_watch, "~> 0.2", only: :test}
+      {:mix_test_watch, "~> 0.2", only: :dev, runtime: false}
     ]
   end
 end
