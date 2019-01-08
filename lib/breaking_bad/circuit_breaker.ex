@@ -162,7 +162,7 @@ defmodule BreakingBad.CircuitBreaker do
     failure_timestamps =
       circuit_breaker.failure_timestamps
       |> Enum.filter(fn failure_timestamp ->
-        System.monotonic_time(:milliseconds) - failure_timestamp < circuit_breaker.threshold_ms
+        System.monotonic_time(:millisecond) - failure_timestamp < circuit_breaker.threshold_ms
       end)
 
     Map.put(circuit_breaker, :failure_timestamps, failure_timestamps)
@@ -170,7 +170,7 @@ defmodule BreakingBad.CircuitBreaker do
 
   defp do_melt(circuit_breaker) do
     failure_timestamps =
-      [System.monotonic_time(:milliseconds) | circuit_breaker.failure_timestamps]
+      [System.monotonic_time(:millisecond) | circuit_breaker.failure_timestamps]
       |> Enum.take(circuit_breaker.threshold)
 
     circuit_breaker = Map.put(circuit_breaker, :failure_timestamps, failure_timestamps)
