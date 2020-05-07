@@ -1,21 +1,14 @@
 defmodule BreakingBad do
   use Application
 
-  # See http://elixir-lang.org/docs/stable/elixir/Application.html
-  # for more information on OTP Applications
   def start(_type, _args) do
     import Supervisor.Spec, warn: false
 
-    # Define workers and child supervisors to be supervised
-    children = [
+    [
       supervisor(BreakingBad.CircuitBreaker.Supervisor, [
         Application.get_env(:breaking_bad, :circuits, [])
       ])
     ]
-
-    # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
-    # for other strategies and supported options
-    opts = [strategy: :one_for_one, name: BreakingBad.Supervisor]
-    Supervisor.start_link(children, opts)
+    |> Supervisor.start_link(strategy: :one_for_one, name: BreakingBad.Supervisor)
   end
 end

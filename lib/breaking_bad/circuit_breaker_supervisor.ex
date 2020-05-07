@@ -6,11 +6,9 @@ defmodule BreakingBad.CircuitBreaker.Supervisor do
   end
 
   def init(configs) do
-    children =
-      Enum.map(configs, fn config ->
-        worker(BreakingBad.CircuitBreaker, [config], id: config.name)
-      end)
-
-    supervise(children, strategy: :one_for_one)
+    Enum.map(configs, fn config ->
+      worker(BreakingBad.CircuitBreaker, [config], id: config.name)
+    end)
+    |> Supervisor.init(strategy: :one_for_one)
   end
 end

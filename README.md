@@ -40,6 +40,7 @@ Where
   `threshold` is the number of failures when the circuit breaker should open
   `threshold_ms` time frame where an error counts towards the threshold
   `reset_ms` time to reset circuit after failure
+  `interval_disabled` disable periodic truncation of failures
 
 Examples with the values above:
 * A circuit will not fail if 2 errors happen 101 ms from each other since 101 ms is a larger timeframe than our 100 ms threshold.

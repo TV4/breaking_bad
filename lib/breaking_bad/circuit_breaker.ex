@@ -54,7 +54,7 @@ defmodule BreakingBad.CircuitBreaker do
   ## GenServer callbacks
 
   def init(config) do
-    if Mix.env() != :test do
+    if !Map.get(config, :interval_disabled, false) do
       :timer.send_interval(
         Application.get_env(:breaking_bad, :circuit_breaker_interval, 1000),
         config.name,

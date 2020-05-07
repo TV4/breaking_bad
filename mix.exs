@@ -18,7 +18,7 @@ defmodule BreakingBad.Mixfile do
       contributors: ["TV4 Infrastruktur"],
       maintainers: ["TV4 Infrastruktur"],
       licenses: ["MIT"],
-      links: %{github: "https://github.com/tv4-infrastruktur/circuit-breaker"}
+      links: %{github: "https://github.com/TV4/breaking_bad"}
     ]
   end
 
